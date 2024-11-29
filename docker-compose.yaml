@@ -1,0 +1,36 @@
+services:
+  app:
+    container_name: vectr_app_container
+    tty: true
+    build: .
+    ports:
+      - 8080:8080
+    restart: on-failure
+    volumes:
+      - .:/app
+    depends_on:
+      - postgresdb
+    networks:
+      - vectr
+
+  postgresdb:
+    image: postgres:latest
+    container_name: vectr_db_container
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=vectr_db
+      - DATABASE_HOST=postgresdb
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+    networks:
+      - vectr
+
+volumes:
+  postgresdb:
+
+networks:
+  vectr:
+    driver: bridge
