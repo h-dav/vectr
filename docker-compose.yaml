@@ -4,33 +4,45 @@ services:
     tty: true
     build: .
     ports:
-      - 8080:8080
+      - "8080:8080"
     restart: on-failure
     volumes:
       - .:/app
     depends_on:
       - postgresdb
-    networks:
-      - vectr
+    # networks:
+    #   - vectr
 
   postgresdb:
     image: postgres:latest
     container_name: vectr_db_container
     environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=vectr_db
-      - DATABASE_HOST=postgresdb
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - ./pg_data:/var/lib/postgresql/data
-    networks:
-      - vectr
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    # networks:
+    #   - vectr
+
+  # pgadmin:
+  #   container_name: pgadmin_container
+  #   image: dpage/pgadmin4
+  #   depends_on:
+  #     - postgresdb
+  #   ports:
+  #     - "5050:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: root
+  #   restart: unless-stopped
 
 volumes:
   postgresdb:
 
-networks:
-  vectr:
-    driver: bridge
+# networks:
+#   vectr:

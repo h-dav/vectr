@@ -27,6 +27,8 @@ func main() {
 		Level: config.AsSlogLevel(cfg.MinimumLogLevel),
 	}))
 
+	logger.Info("config loaded", slog.Any("cfg", cfg))
+
 	db, err := database.NewConnection(cfg, logger)
 	if err != nil {
 		logger.Error("Failed to create new database connection: %w", slog.Any("err", err))

@@ -15,7 +15,7 @@ const readerHeaderTimeout = time.Second * 10
 func NewServer(cfg config.Config, db *sql.DB, logger *slog.Logger) (*http.Server, error) {
 	router := http.NewServeMux()
 
-	attachHealthRouter(router, logger)
+	attachHealthCheck(router, logger)
 
 	v1.AttachSubRouter(router, db, logger)
 
@@ -28,7 +28,7 @@ func NewServer(cfg config.Config, db *sql.DB, logger *slog.Logger) (*http.Server
 	return srv, nil
 }
 
-func attachHealthRouter(router *http.ServeMux, logger *slog.Logger) {
+func attachHealthCheck(router *http.ServeMux, logger *slog.Logger) {
 	router.HandleFunc(`/alive`, func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("alive check received")
 		w.WriteHeader(http.StatusOK)
