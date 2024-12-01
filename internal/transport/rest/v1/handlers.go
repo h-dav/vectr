@@ -22,8 +22,8 @@ type Vector struct {
 	Metadata   Metadata `json:"metadata"`
 }
 
-func NewFilterHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func NewFilterHandler(db *sql.DB, logger *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("filter request received")
 
 		vectorId := r.URL.Query().Get("id")
@@ -74,7 +74,7 @@ func NewFilterHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWrite
 
 		w.WriteHeader(http.StatusBadRequest)
 		return
-	}
+	})
 }
 
 func getVectorsByValue(db *sql.DB, value string, logger *slog.Logger) ([]Vector, error) {
@@ -137,8 +137,8 @@ func getVectorByID(db *sql.DB, vectorID string, logger *slog.Logger) (Vector, er
 	return Vector{}, nil
 }
 
-func NewCreateHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func NewCreateHandler(db *sql.DB, logger *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("create request received")
 
 		var vector Vector
@@ -154,7 +154,7 @@ func NewCreateHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWrite
 		}
 
 		w.WriteHeader(http.StatusOK)
-	}
+	})
 }
 
 func insertVector(db *sql.DB, vector Vector, logger *slog.Logger) (string, error) {
