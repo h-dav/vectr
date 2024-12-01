@@ -3,7 +3,6 @@ package v1
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -11,13 +10,14 @@ import (
 )
 
 type Vec []float64
+type Metadata map[string]any
 
 type Vector struct {
-	ID         byte   `json:"vector_id"`
-	DatabaseID byte   `json:"database_id"`
-	Value      string `json:"value"`
-	Vector     Vec    `json:"vector"`
-	Metadata   string `json:"metadata"`
+	ID         byte     `json:"vector_id"`
+	DatabaseID byte     `json:"database_id"`
+	Value      string   `json:"value"`
+	Vector     Vec      `json:"vector"`
+	Metadata   Metadata `json:"metadata"`
 }
 
 type VectorResponse struct {
@@ -28,37 +28,27 @@ type VectorResponse struct {
 	Metadata   string `json:"metadata"`
 }
 
-func NewCreateDbHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("post request received")
-	}
-}
 func NewReadHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vectorId := r.PathValue("vectorId")
 
-		vector, err := getVectorsByIDs(db, vectorId, logger)
+		vector, err := getVectorByID(db, vectorId, logger)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-
-		logger.Info("value", slog.Any("vec", vector.Vector))
 
 		data, _ := json.Marshal(vector)
 
 		json.Unmarshal(data, &vector)
 
-		fmt.Println(vector)
-
-		fmt.Println(string(data))
-
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
+
 		return
 	}
 }
 
-func getVectorsByIDs(db *sql.DB, vectorID string, logger *slog.Logger) (Vector, error) {
+func getVectorByID(db *sql.DB, vectorID string, logger *slog.Logger) (Vector, error) {
 	rows, err := db.Query(`select vector_id, database_id, value, vector, metadata from vectors where vector_id = $1`, vectorID)
 	if err != nil {
 		logger.Error("connection query error", slog.Any("err", err))
@@ -69,13 +59,15 @@ func getVectorsByIDs(db *sql.DB, vectorID string, logger *slog.Logger) (Vector, 
 	for rows.Next() {
 		var vector Vector
 		var v []byte
+		var md []byte
 
-		if err := rows.Scan(&vector.ID, &vector.DatabaseID, &vector.Value, &v, &vector.Metadata); err != nil {
+		if err := rows.Scan(&vector.ID, &vector.DatabaseID, &vector.Value, &v, &md); err != nil {
 			logger.Error("scanning row", slog.Any("err", err))
 			return Vector{}, err
 		}
 
 		vector.Vector, _ = convertBytesToVec(v, logger)
+		vector.Metadata, _ = convertBytesToMetadata(md, logger)
 
 		return vector, nil // This could lead to bugs further down the line in the case that two vectors are returned.
 	}
@@ -103,6 +95,24 @@ func convertBytesToVec(bytes []byte, logger *slog.Logger) (Vec, error) {
 	}
 
 	return vector, nil
+}
+
+func convertBytesToMetadata(bytes []byte, logger *slog.Logger) (Metadata, error) {
+	var metadata Metadata
+
+	err := json.Unmarshal(bytes, &metadata)
+	if err != nil {
+		logger.Error("parsing metadata", slog.Any("err", err))
+		return Metadata{}, nil
+	}
+
+	return metadata, nil
+}
+
+func NewCreateDbHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("post request received")
+	}
 }
 
 func NewWriteHandler(db *sql.DB, logger *slog.Logger) func(w http.ResponseWriter, r *http.Request) {
