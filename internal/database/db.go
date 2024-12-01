@@ -12,8 +12,6 @@ import (
 func NewConnection(cfg config.Config, logger *slog.Logger) (*sql.DB, error) {
 	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", cfg.Database.Username, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
 
-	logger.Info("connStr", slog.String("Conn string", connStr))
-
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		logger.Error("opening DB connection", slog.Any("err", err)) // TODO: Find an alternative to slog.Any for errors.
@@ -26,5 +24,4 @@ func NewConnection(cfg config.Config, logger *slog.Logger) (*sql.DB, error) {
 	}
 
 	return db, nil
-
 }
